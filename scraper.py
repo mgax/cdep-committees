@@ -4,6 +4,12 @@ import lxml.html
 
 USER_AGENT = "https://morph.io/mgax/cdep-committees"
 
+CHAMBERS = {
+    1: 'senate',
+    2: 'cdep',
+    0: 'common',
+}
+
 
 def scrape_page(leg, cam):
     url = ('http://www.cdep.ro/pls/parlam/structura2015.co?'
@@ -17,6 +23,7 @@ def scrape_page(leg, cam):
             qs = urlparse.parse_qs(urlparse.urlparse(href).query)
             data = {
                 'cam': cam,
+                'cam_code': CHAMBERS[cam],
                 'leg': leg,
                 'idc': int(qs['idc'][0]),
                 'name': a_node.text_content(),
