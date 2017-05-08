@@ -12,15 +12,17 @@ def scrape_page(leg, cam):
     root = lxml.html.fromstring(html)
 
     for a_node in root.cssselect('.grupuri-parlamentare-list a'):
-        qs = urlparse.parse_qs(urlparse.urlparse(a_node.attrib['href']).query)
-        data = {
-            'cam': cam,
-            'leg': leg,
-            'idc': int(qs['idc'][0]),
-            'name': a_node.text_content(),
-        }
+        href = a_node.attrib['href']
+        if href.startswith('/pls/parlam/structura2015.co?'):
+            qs = urlparse.parse_qs(urlparse.urlparse(href).query)
+            data = {
+                'cam': cam,
+                'leg': leg,
+                'idc': int(qs['idc'][0]),
+                'name': a_node.text_content(),
+            }
 
-        scraperwiki.sqlite.save(unique_keys=['cam', 'leg', 'idc'], data=data)
+            scraperwiki.sqlite.save(unique_keys=['cam', 'leg', 'idc'], data=data)
 
 
 def dump():
@@ -34,7 +36,9 @@ def main():
         dump()
         return
 
-    scrape_page(2016, 2)
+    for leg in [2016, 2012, 2008, 2004, 2000, 1996, 1992, 1990]:
+        for cam in [2, 1, 0]:
+            scrape_page(leg, cam)
 
 
 if __name__ == '__main__':
