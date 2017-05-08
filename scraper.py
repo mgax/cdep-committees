@@ -1,24 +1,41 @@
-# This is a template for a Python scraper on morph.io (https://morph.io)
-# including some code snippets below that you should find helpful
+import urlparse
+import scraperwiki
+import lxml.html
 
-# import scraperwiki
-# import lxml.html
-#
-# # Read in a page
-# html = scraperwiki.scrape("http://foo.com")
-#
-# # Find something on the page using css selectors
-# root = lxml.html.fromstring(html)
-# root.cssselect("div[align='left']")
-#
-# # Write out to the sqlite database using scraperwiki library
-# scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "susan", "occupation": "software developer"})
-#
-# # An arbitrary query against the database
-# scraperwiki.sql.select("* from data where 'name'='peter'")
+USER_AGENT = "https://morph.io/mgax/cdep-committees"
 
-# You don't have to do things with the ScraperWiki and lxml libraries.
-# You can use whatever libraries you want: https://morph.io/documentation/python
-# All that matters is that your final data is written to an SQLite database
-# called "data.sqlite" in the current working directory which has at least a table
-# called "data".
+
+def scrape_page(leg, cam):
+    url = ('http://www.cdep.ro/pls/parlam/structura2015.co?'
+           'leg={}&cam={}'.format(leg, cam))
+    html = scraperwiki.scrape(url, user_agent=USER_AGENT).decode('ISO-8859-2')
+    root = lxml.html.fromstring(html)
+
+    for a_node in root.cssselect('.grupuri-parlamentare-list a'):
+        qs = urlparse.parse_qs(urlparse.urlparse(a_node.attrib['href']).query)
+        data = {
+            'cam': cam,
+            'leg': leg,
+            'idc': int(qs['idc'][0]),
+            'name': a_node.text_content(),
+        }
+
+        scraperwiki.sqlite.save(unique_keys=['cam', 'leg', 'idc'], data=data)
+
+
+def dump():
+    for record in scraperwiki.sql.select("* from data"):
+        print(', '.join(u"{}: {}".format(k, v) for k, v in record.items()))
+
+
+def main():
+    import sys
+    if sys.argv[1:] == ['dump']:
+        dump()
+        return
+
+    scrape_page(2016, 2)
+
+
+if __name__ == '__main__':
+    main()
